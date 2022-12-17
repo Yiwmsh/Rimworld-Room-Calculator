@@ -19,6 +19,11 @@ roomImpressiveness = 0
 
 spaciousness = 0
 
+scaledWealth = 0
+scaledBeauty = 0
+scaledSpace = 0
+scaledCleanliness = 0
+
 impressivenessTitles = [
     Title(240, 'Wondrously Impressive'),
     Title(170, 'Unbelievably Impressive'),
@@ -93,6 +98,33 @@ def updateValueTitles() -> None:
     if event == '-Cleanliness-' and type(cleanlinessValue) == float:
         window['-CleanlinessTitle-'].update('(%s)' %
                                             getCleanlinessTitle(cleanlinessValue))
+
+
+def findBestUpgrade(allowSpace: bool, allowCleanliness: bool) -> any:
+    stats = [scaledWealth, scaledBeauty, scaledSpace, scaledCleanliness]
+
+    predictedWealth = scaledWealth + 0
+    predictedBeauty = scaledBeauty + 0
+    predictedSpace = scaledSpace + 0
+    predictedCleanliness = scaledCleanliness + 0
+
+    predictedStats = [predictedWealth, predictedBeauty,
+                      predictedSpace, predictedCleanliness]
+    predictedImpressiveness = calculateImpressiveness(
+        predictedWealth, predictedBeauty, predictedSpace, predictedCleanliness)
+    distanceToNextTitle = getDistanceToNextImpressivenessTitle(
+        predictedImpressiveness)
+
+
+def getDistanceToNextImpressivenessTitle(impressiveness: float) -> float or False:
+    for i in range(len(impressivenessTitles)):
+        if impressiveness >= impressivenessTitles[i].minValue:
+            if i < len(impressivenessTitles)-1:
+                nextTitleMinValue = impressivenessTitles[i+1].minValue
+                return nextTitleMinValue - impressiveness
+            else:
+                return False
+
 
 # Titles
 
@@ -175,16 +207,27 @@ def tryCastFloat(input: str) -> float or False:
 # Calculator
 
 
-def calculateRoomImpressiveness(wealth: float, beauty: float, space: float, cleanliness: float) -> float:
+def calculateImpressiveness(wealth: float, beauty: float, space: float, cleanliness: float) -> float:
+    impressivenessFactors = [wealth, beauty, space, cleanliness]
+    baseImpressiveness = (65 * (scaledBeauty + scaledWealth + scaledSpace +
+                          scaledCleanliness) / 4) + (35 * min(impressivenessFactors))
+    spaceSoftCap = math.floor(500 * space)
+    if baseImpressiveness > spaceSoftCap:
+        return 0.25 * baseImpressiveness + 0.75 * spaceSoftCap
+    else:
+        return baseImpressiveness
+
+
+def setRoomImpressiveness(wealth: float, beauty: float, space: float, cleanliness: float) -> float:
     scaledWealth = scaleWealth(wealth)
     scaledBeauty = scaleBeauty(beauty)
     scaledSpace = scaleSpace(space)
     scaledCleanliness = scaleCleanliness(cleanliness)
-    impressivenessValues = [scaledBeauty,
-                            scaledWealth, scaledSpace, scaledCleanliness]
+    impressivenessFactors = [scaledBeauty,
+                             scaledWealth, scaledSpace, scaledCleanliness]
 
     baseImpressiveness = (65 * (scaledBeauty + scaledWealth + scaledSpace +
-                          scaledCleanliness) / 4) + (35 * min(impressivenessValues))
+                          scaledCleanliness) / 4) + (35 * min(impressivenessFactors))
 
     spaciousness = math.floor(500 * scaledSpace)
     if baseImpressiveness > spaciousness:
@@ -263,5 +306,5 @@ while True:
                                                     getCleanlinessTitle(cleanlinessValue))
 
             if type(wealthValue) == float and type(beautyValue) == float and type(spaceValue) == float and type(cleanlinessValue) == float:
-                calculateRoomImpressiveness(
+                setRoomImpressiveness(
                     wealthValue, beautyValue, spaceValue, cleanlinessValue)
